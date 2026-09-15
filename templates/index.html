@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Smart Street Light Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20260915">
+</head>
+<body>
+  <div class="dashboard-shell">
+    <header class="topbar">
+      <div class="brand-wrap">
+        <div class="brand-mark">◉</div>
+        <div>
+          <p class="eyebrow">Streetlight Control</p>
+          <h1>Smart StreetLight</h1>
+        </div>
+      </div>
+      <div id="connection-badge" class="badge disconnected">ESP32: Checking...</div>
+    </header>
+
+    <main class="content">
+      <section class="stats-grid">
+        <article class="stat-card">
+          <div class="card-label">Environment</div>
+          <div id="environment" class="value">--</div>
+        </article>
+
+        <article class="stat-card accent-green">
+          <div class="card-label">Motion</div>
+          <div id="motion" class="value">--</div>
+        </article>
+
+        <article class="stat-card accent-gold">
+          <div class="card-label">Brightness</div>
+          <div id="brightness" class="value">--</div>
+        </article>
+
+        <article class="stat-card accent-red">
+          <div class="card-label">Fault Alert</div>
+          <div id="fault" class="value">--</div>
+        </article>
+      </section>
+
+      <section class="lights-panel">
+        <div class="panel-header">
+          <h2>Lighting Network</h2>
+          <span class="panel-tag">Live status</span>
+        </div>
+
+        <div class="lights-row">
+          <div class="light-box">
+            <div id="light1-bulb" class="light-symbol off"><span>💡</span></div>
+            <p>Light 1</p>
+            <p id="light1-status" class="light-status">--</p>
+          </div>
+
+          <div class="light-box">
+            <div id="light2-bulb" class="light-symbol off"><span>💡</span></div>
+            <p>Light 2</p>
+            <p id="light2-status" class="light-status">--</p>
+          </div>
+
+          <div class="light-box">
+            <div id="light3-bulb" class="light-symbol off"><span>💡</span></div>
+            <p>Light 3</p>
+            <p id="light3-status" class="light-status">--</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-bar">
+      <span>Last updated</span>
+      <strong id="last-updated">Never</strong>
+    </footer>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
