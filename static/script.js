@@ -57,4 +57,4 @@ async function refreshStatus() {
 
 // Fetch immediately on load, then every 2 seconds
 refreshStatus();
-setInterval(refreshStatus, 2000);
+setInterval(refreshStatus, 500);
