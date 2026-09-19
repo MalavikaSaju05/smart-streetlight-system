@@ -1,120 +1,434 @@
-// Smart Street Light dashboard
-// Element IDs used (must exist in index.html):
-//   environment, motion, brightness, fault, last-updated, connection-badge,
-//   light1-status, light1-bulb, light2-status, light2-bulb, light3-status, light3-bulb
+// ============================================================
+// SMART STREET LIGHT DASHBOARD
+// ============================================================
+//
+// The browser periodically asks Flask for the latest ESP32
+// state.
+//
+// IMPORTANT:
+// The dashboard does NOT control the physical lights.
+// ESP32 controls the lights locally.
+// The dashboard only displays the latest state received
+// from ESP32.
+// ============================================================
 
-const POLL_INTERVAL_MS = 700;   // wait between polls (measured AFTER the previous one finishes)
-const FETCH_TIMEOUT_MS = 4000;  // give up on one request after 4 s
 
-let missingIds = new Set();
+const POLL_INTERVAL_MS = 700;
+const FETCH_TIMEOUT_MS = 3000;
 
-// Null-safe element lookup: a missing element is reported once, never throws.
+
+// ============================================================
+// SAFE DOM LOOKUP
+// ============================================================
+
 function el(id) {
-    const node = document.getElementById(id);
-    if (!node && !missingIds.has(id)) {
-        missingIds.add(id);
-        console.warn("Dashboard: element with id '" + id + "' not found in index.html");
+
+    return document.getElementById(id);
+
+}
+
+
+// ============================================================
+// DISPLAY VALUE
+// ============================================================
+
+function displayValue(value) {
+
+    if (
+        value === undefined ||
+        value === null ||
+        value === "unknown"
+    ) {
+
+        return "--";
+
     }
-    return node;
-}
 
-function setText(id, text) {
-    const node = el(id);
-    if (node) node.textContent = text;
-}
-
-function show(value) {
-    if (value === undefined || value === null || value === "unknown") return "--";
     return String(value).toUpperCase();
+
 }
 
-function setBulb(id, statusText) {
+
+// ============================================================
+// UPDATE TEXT
+// ============================================================
+
+function setText(id, value) {
+
+    const element = el(id);
+
+    if (!element) {
+        return;
+    }
+
+    element.textContent = value;
+
+}
+
+
+// ============================================================
+// UPDATE BULB
+// ============================================================
+
+function setBulb(id, status) {
+
     const bulb = el(id);
-    if (!bulb) return;
+
+    if (!bulb) {
+        return;
+    }
+
+
+    // Remove previous status classes
 
     bulb.className = "light-symbol";
 
-    if (statusText === "bright") {
+
+    // Apply current status
+
+    if (status === "bright") {
+
         bulb.classList.add("bright");
-    } else if (statusText === "dim") {
-        bulb.classList.add("dim");
-    } else if (statusText === "fault") {
-        bulb.classList.add("fault");
-    } else {
-        bulb.classList.add("off");
+
     }
+
+    else if (status === "dim") {
+
+        bulb.classList.add("dim");
+
+    }
+
+    else if (status === "fault") {
+
+        bulb.classList.add("fault");
+
+    }
+
+    else {
+
+        bulb.classList.add("off");
+
+    }
+
 }
 
-function setBadge(text, connected) {
+
+// ============================================================
+// CONNECTION BADGE
+// ============================================================
+
+function updateConnectionBadge(connected) {
+
     const badge = el("connection-badge");
-    if (!badge) return;
-    badge.textContent = text;
-    badge.className = "badge " + (connected ? "connected" : "disconnected");
+
+    if (!badge) {
+        return;
+    }
+
+
+    if (connected) {
+
+        badge.textContent = "ESP32: Connected";
+
+        badge.className =
+            "badge connected";
+
+    }
+
+    else {
+
+        badge.textContent = "ESP32: Not connected";
+
+        badge.className =
+            "badge disconnected";
+
+    }
+
 }
+
+
+// ============================================================
+// RENDER SERVER DATA
+// ============================================================
 
 function render(data) {
-    setText("environment", show(data.environment));
-    setText("motion", show(data.motion));
 
-    const brightness = Number(data.brightness) || 0;
-    setText("brightness", Math.round((brightness / 255) * 100) + "%");
 
-    setText("light1-status", show(data.light1));
-    setText("light2-status", show(data.light2));
-    setText("light3-status", show(data.light3));
+    // --------------------------------------------------------
+    // Environment
+    // --------------------------------------------------------
 
-    setBulb("light1-bulb", data.light1);
-    setBulb("light2-bulb", data.light2);
-    setBulb("light3-bulb", data.light3);
+    setText(
+        "environment",
+        displayValue(data.environment)
+    );
 
-    const faultEl = el("fault");
-    if (faultEl) {
-        if (data.fault && data.fault !== "none") {
-            faultEl.textContent = "⚠ " + String(data.fault).toUpperCase();
-            faultEl.classList.add("alert");
-        } else {
-            faultEl.textContent = "✓ NO FAULT";
-            faultEl.classList.remove("alert");
+
+    // --------------------------------------------------------
+    // Motion
+    // --------------------------------------------------------
+
+    setText(
+        "motion",
+        displayValue(data.motion)
+    );
+
+
+    // --------------------------------------------------------
+    // Brightness
+    // --------------------------------------------------------
+
+    let brightness =
+        Number(data.brightness);
+
+    if (
+        Number.isNaN(brightness)
+    ) {
+
+        brightness = 0;
+
+    }
+
+
+    brightness =
+        Math.max(
+            0,
+            Math.min(
+                255,
+                brightness
+            )
+        );
+
+
+    const percentage =
+        Math.round(
+            (brightness / 255) * 100
+        );
+
+
+    setText(
+        "brightness",
+        percentage + "%"
+    );
+
+
+    // --------------------------------------------------------
+    // Light 1
+    // --------------------------------------------------------
+
+    setText(
+        "light1-status",
+        displayValue(data.light1)
+    );
+
+    setBulb(
+        "light1-bulb",
+        data.light1
+    );
+
+
+    // --------------------------------------------------------
+    // Light 2
+    // --------------------------------------------------------
+
+    setText(
+        "light2-status",
+        displayValue(data.light2)
+    );
+
+    setBulb(
+        "light2-bulb",
+        data.light2
+    );
+
+
+    // --------------------------------------------------------
+    // Light 3
+    // --------------------------------------------------------
+
+    setText(
+        "light3-status",
+        displayValue(data.light3)
+    );
+
+    setBulb(
+        "light3-bulb",
+        data.light3
+    );
+
+
+    // --------------------------------------------------------
+    // Fault
+    // --------------------------------------------------------
+
+    const faultElement =
+        el("fault");
+
+
+    if (faultElement) {
+
+        if (
+            data.fault &&
+            data.fault !== "none"
+        ) {
+
+            faultElement.textContent =
+                "⚠ " +
+                String(data.fault).toUpperCase();
+
+            faultElement.classList.add(
+                "alert"
+            );
+
         }
+
+        else {
+
+            faultElement.textContent =
+                "✓ NO FAULT";
+
+            faultElement.classList.remove(
+                "alert"
+            );
+
+        }
+
     }
 
-    setText("last-updated", data.last_updated || "Never");
 
-    if (data.esp32_connected) {
-        setBadge("ESP32: Connected", true);
-    } else {
-        setBadge("ESP32: Not connected", false);
-    }
+    // --------------------------------------------------------
+    // Last Updated
+    // --------------------------------------------------------
+
+    setText(
+        "last-updated",
+        data.last_updated || "Never"
+    );
+
+
+    // --------------------------------------------------------
+    // ESP32 Connection
+    // --------------------------------------------------------
+
+    updateConnectionBadge(
+        Boolean(data.esp32_connected)
+    );
+
 }
+
+
+// ============================================================
+// FETCH STATUS
+// ============================================================
 
 async function refreshStatus() {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+
+    const controller =
+        new AbortController();
+
+
+    const timeout =
+        setTimeout(
+            () => controller.abort(),
+            FETCH_TIMEOUT_MS
+        );
+
 
     try {
-        const response = await fetch("/api/status", {
-            cache: "no-store",
-            signal: controller.signal
-        });
+
+
+        const response =
+            await fetch(
+                "/api/status?_=" +
+                Date.now(),
+                {
+                    method: "GET",
+
+                    cache: "no-store",
+
+                    signal:
+                        controller.signal,
+
+                    headers: {
+                        "Cache-Control":
+                            "no-cache"
+                    }
+                }
+            );
+
 
         if (!response.ok) {
-            throw new Error("Server returned " + response.status);
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
         }
 
-        const data = await response.json();
+
+        const data =
+            await response.json();
+
+
         render(data);
 
-    } catch (error) {
-        console.error("Dashboard error:", error);
-        // This only means the BROWSER could not reach the server.
-        setBadge("Server unreachable", false);
 
-    } finally {
-        clearTimeout(timer);
-        // Always schedule the next poll, whatever happened above.
-        // Chaining setTimeout (not setInterval) prevents overlapping requests.
-        setTimeout(refreshStatus, POLL_INTERVAL_MS);
     }
+
+    catch (error) {
+
+
+        console.error(
+            "Dashboard error:",
+            error
+        );
+
+
+        // Do not overwrite all the
+        // existing data.
+        //
+        // Only indicate that the browser
+        // could not reach Flask.
+
+        const badge =
+            el("connection-badge");
+
+
+        if (badge) {
+
+            badge.textContent =
+                "Server unreachable";
+
+            badge.className =
+                "badge disconnected";
+
+        }
+
+
+    }
+
+    finally {
+
+
+        clearTimeout(timeout);
+
+
+        // Schedule the next request.
+
+        setTimeout(
+            refreshStatus,
+            POLL_INTERVAL_MS
+        );
+
+    }
+
 }
+
+
+// ============================================================
+// START DASHBOARD
+// ============================================================
 
 refreshStatus();
