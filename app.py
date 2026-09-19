@@ -1,164 +1,167 @@
-"""
-Smart Street Light - Flask backend (Render)
-
-Endpoints
-  GET  /              dashboard page
-  POST /api/status    ESP32 pushes its latest state (JSON)
-  GET  /api/status    dashboard reads the latest state
-  GET  /health        tiny keep-alive / health-check endpoint
-
-The state lives in memory, so run with ONE gunicorn worker:
-  gunicorn app:app --workers 1 --threads 4 --keep-alive 5 --timeout 30
-"""
-
-import os
-import threading
+from flask import Flask, render_template, request, jsonify
+from datetime import datetime
 import time
-from datetime import datetime, timedelta, timezone
-
-from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 
-# ESP32 counts as connected if we heard from it within this many seconds.
-# (The ESP32 sends a heartbeat every ~3 s, so 10 s tolerates 2 lost packets.)
-ESP32_TIMEOUT = 10
+# ============================================================
+# LATEST ESP32 STATUS
+# ============================================================
 
-# Render servers run in UTC. Show the "last updated" clock in IST.
-DISPLAY_TZ = timezone(timedelta(hours=5, minutes=30))
-
-# Allowed values for each text field (keeps the same JSON format as before).
-VALID_VALUES = {
-    "environment": {"day", "night"},
-    "motion": {"none", "detected"},
-    "light1": {"off", "dim", "bright", "fault"},
-    "light2": {"off", "dim", "bright"},
-    "light3": {"off", "dim", "bright"},
-    "fault": {"none", "LIGHT1_FAILED"},
-}
-
-state_lock = threading.Lock()
-
-# Latest data received from the ESP32
 latest_status = {
     "environment": "unknown",
     "motion": "none",
+
     "light1": "off",
     "light2": "off",
     "light3": "off",
+
     "brightness": 0,
     "fault": "none",
+
     "last_updated": None,
-    "esp32_connected": False,
     "last_seen": 0,
+    "esp32_connected": False
 }
 
-STATE_FIELDS = ("environment", "motion", "light1", "light2", "light3",
-                "brightness", "fault")
+# ESP32 considered connected if an update was received
+# within the last 10 seconds.
+ESP32_TIMEOUT = 10
 
 
-def validate(data):
-    """Return (clean_values, errors). Missing fields are simply not updated."""
-    clean, errors = {}, []
-
-    for field, allowed in VALID_VALUES.items():
-        if field not in data:
-            continue
-        value = data[field]
-        if not isinstance(value, str):
-            errors.append(f"{field} must be a string")
-            continue
-        # environment/motion/lights are lowercase; the fault code is exact
-        value = value if field == "fault" else value.strip().lower()
-        if value not in allowed:
-            errors.append(f"{field} has invalid value '{value}'")
-            continue
-        clean[field] = value
-
-    if "brightness" in data:
-        b = data["brightness"]
-        if isinstance(b, bool) or not isinstance(b, int) or not 0 <= b <= 255:
-            errors.append("brightness must be an integer from 0 to 255")
-        else:
-            clean["brightness"] = b
-
-    return clean, errors
-
-
-@app.after_request
-def no_cache_for_api(response):
-    # Never let a browser or proxy serve a stale status.
-    if request.path.startswith("/api/"):
-        response.headers["Cache-Control"] = "no-store, max-age=0"
-    return response
-
+# ============================================================
+# DASHBOARD
+# ============================================================
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
-@app.route("/health")
-def health():
-    return "ok", 200
-
+# ============================================================
+# ESP32 -> SERVER
+# ============================================================
 
 @app.route("/api/status", methods=["POST"])
 def receive_status():
+
     data = request.get_json(silent=True)
 
     if not isinstance(data, dict):
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Invalid JSON"
+        }), 400
 
-    clean, errors = validate(data)
-    if errors:
-        return jsonify({"error": "Validation failed", "details": errors}), 400
+    # --------------------------------------------------------
+    # Update only fields supplied by ESP32
+    # --------------------------------------------------------
 
-    with state_lock:
-        changed = any(
-            latest_status[key] != value for key, value in clean.items()
-        )
-        latest_status.update(clean)
-        latest_status["last_seen"] = time.time()
-        latest_status["last_updated"] = datetime.now(DISPLAY_TZ).strftime("%H:%M:%S")
-        latest_status["esp32_connected"] = True
-        snapshot = {key: latest_status[key] for key in STATE_FIELDS}
+    if "environment" in data:
+        latest_status["environment"] = str(data["environment"])
 
-    # Log only real changes, not every heartbeat.
-    if changed:
-        print(
-            "ESP32 UPDATE:", snapshot["environment"],
-            "| Motion:", snapshot["motion"],
-            "| Brightness:", snapshot["brightness"],
-            "| L1:", snapshot["light1"],
-            "| L2:", snapshot["light2"],
-            "| L3:", snapshot["light3"],
-            "| Fault:", snapshot["fault"],
-            flush=True,
-        )
+    if "motion" in data:
+        latest_status["motion"] = str(data["motion"])
 
-    return jsonify({"status": "success"}), 200
+    if "light1" in data:
+        latest_status["light1"] = str(data["light1"])
 
+    if "light2" in data:
+        latest_status["light2"] = str(data["light2"])
+
+    if "light3" in data:
+        latest_status["light3"] = str(data["light3"])
+
+    if "brightness" in data:
+        try:
+            latest_status["brightness"] = int(data["brightness"])
+        except (ValueError, TypeError):
+            pass
+
+    if "fault" in data:
+        latest_status["fault"] = str(data["fault"])
+
+    # --------------------------------------------------------
+    # Connection information
+    # --------------------------------------------------------
+
+    now = time.time()
+
+    latest_status["last_seen"] = now
+    latest_status["last_updated"] = datetime.now().strftime(
+        "%H:%M:%S"
+    )
+
+    latest_status["esp32_connected"] = True
+
+    # --------------------------------------------------------
+    # Server log
+    # --------------------------------------------------------
+
+    print(
+        "[ESP32]",
+        "Environment:", latest_status["environment"],
+        "| Motion:", latest_status["motion"],
+        "| Brightness:", latest_status["brightness"],
+        "| L1:", latest_status["light1"],
+        "| L2:", latest_status["light2"],
+        "| L3:", latest_status["light3"],
+        "| Fault:", latest_status["fault"]
+    )
+
+    return jsonify({
+        "status": "success"
+    }), 200
+
+
+# ============================================================
+# SERVER -> DASHBOARD
+# ============================================================
 
 @app.route("/api/status", methods=["GET"])
 def get_status():
-    with state_lock:
-        response = latest_status.copy()
 
-    if response["last_seen"] == 0:
-        response["esp32_connected"] = False
-        response["seconds_since_last_update"] = None
+    now = time.time()
+
+    # Check whether ESP32 has sent anything recently
+    if latest_status["last_seen"] == 0:
+        connected = False
     else:
-        age = time.time() - response["last_seen"]
-        response["esp32_connected"] = age <= ESP32_TIMEOUT
-        response["seconds_since_last_update"] = round(age, 1)
+        connected = (
+            now - latest_status["last_seen"]
+            <= ESP32_TIMEOUT
+        )
+
+    response = latest_status.copy()
+
+    response["esp32_connected"] = connected
+
+    # Don't expose internal timestamp to browser
+    response.pop("last_seen", None)
 
     return jsonify(response)
 
 
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.route("/health")
+def health():
+
+    return jsonify({
+        "status": "ok"
+    })
+
+
+# ============================================================
+# RUN
+# ============================================================
+
 if __name__ == "__main__":
+
     app.run(
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        threaded=True,
+        port=5000,
+        threaded=True
     )
