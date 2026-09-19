@@ -344,6 +344,12 @@ h1 {
   .topbar {
     gap: 12px;
     padding: 4px 8px 14px;
+    flex-wrap: wrap;
+  }
+
+  .brand-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .brand-mark {
@@ -363,6 +369,8 @@ h1 {
   .badge {
     padding: 8px 12px;
     font-size: 0.65rem;
+    flex-shrink: 0;
+    min-width: fit-content;
   }
 
   .stats-grid {
@@ -428,6 +436,44 @@ h1 {
   }
 }
 
+/* Split-screen and compact views - 600px and below */
+@media (max-width: 600px) {
+  .dashboard-shell {
+    padding: 14px 14px 10px;
+  }
+
+  .topbar {
+    gap: 10px;
+    padding: 4px 6px 12px;
+  }
+
+  .badge {
+    padding: 7px 11px;
+    font-size: 0.62rem;
+    white-space: nowrap;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 11px;
+  }
+
+  .stat-card {
+    padding: 13px 11px;
+    min-height: 105px;
+  }
+
+  .lights-row {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+
+  .light-box {
+    padding: 15px 11px 11px;
+    min-height: 135px;
+  }
+}
+
 /* Mobile - 480px and below */
 @media (max-width: 480px) {
   body {
@@ -441,39 +487,53 @@ h1 {
   }
 
   .topbar {
-    flex-direction: column;
+    flex-direction: row;
     align-items: stretch;
-    padding: 2px 6px 10px;
-    gap: 10px;
+    padding: 8px 6px 12px;
+    gap: 8px;
+    width: 100%;
   }
 
   .brand-wrap {
-    flex-direction: column;
+    flex: 1 1 auto;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    text-align: center;
+    justify-content: flex-start;
+    gap: 8px;
+    text-align: left;
   }
 
   .brand-mark {
     width: 32px;
     height: 32px;
     font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .brand-wrap > div {
+    min-width: 0;
+    flex: 1;
   }
 
   h1 {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
+    line-height: 1;
+    margin: 2px 0 0 0;
   }
 
   .eyebrow {
     font-size: 0.6rem;
+    margin: 0 0 2px 0;
   }
 
   .badge {
-    width: 100%;
+    width: auto;
     text-align: center;
     padding: 8px 10px;
     font-size: 0.6rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+    align-self: center;
   }
 
   .content {
@@ -507,8 +567,9 @@ h1 {
   }
 
   .panel-header {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 10px;
     gap: 8px;
     padding: 0 2px;
@@ -516,14 +577,16 @@ h1 {
 
   .panel-header h2 {
     font-size: 0.72rem;
-    text-align: center;
+    text-align: left;
+    flex: 1;
   }
 
   .panel-tag {
-    width: 100%;
+    width: auto;
     text-align: center;
     font-size: 0.58rem;
     padding: 5px 8px;
+    flex-shrink: 0;
   }
 
   .lights-row {
@@ -572,8 +635,28 @@ h1 {
     padding: 12px 10px 8px;
   }
 
+  .topbar {
+    padding: 6px 4px 10px;
+    gap: 6px;
+  }
+
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+
   h1 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+  }
+
+  .eyebrow {
+    font-size: 0.55rem;
+  }
+
+  .badge {
+    padding: 6px 8px;
+    font-size: 0.55rem;
   }
 
   .stat-card {
