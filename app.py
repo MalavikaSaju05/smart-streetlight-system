@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, jsonify
-from datetime import datetime
+from datetime import datetime, timezone
+import time
 
 app = Flask(__name__)
 
-# This dictionary holds the LATEST status received from the ESP32.
-# In a real product you'd use a database; for a student project, memory is fine.
+# Latest data received from ESP32
 latest_status = {
     "environment": "unknown",
     "motion": "none",
@@ -14,61 +14,122 @@ latest_status = {
     "brightness": 0,
     "fault": "none",
     "last_updated": None,
-    "esp32_connected": False
+    "esp32_connected": False,
+    "last_seen": 0
 }
+
+# ESP32 is considered connected if we heard from it
+# within this many seconds.
+ESP32_TIMEOUT = 10
 
 
 @app.route("/")
 def index():
-    """Serves the dashboard web page."""
     return render_template("index.html")
 
 
 @app.route("/api/status", methods=["POST"])
 def receive_status():
-    """
-    This is the endpoint the ESP32 sends data to.
-    It expects a JSON body like:
-    {
-      "environment": "night",
-      "motion": "detected",
-      "light1": "bright",
-      "light2": "bright",
-      "light3": "dim",
-      "brightness": 255,
-      "fault": "none"
-    }
-    """
+
     data = request.get_json(silent=True)
 
     if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
+        return jsonify({
+            "error": "Invalid or missing JSON body"
+        }), 400
 
-    latest_status["environment"] = data.get("environment", latest_status["environment"])
-    latest_status["motion"] = data.get("motion", latest_status["motion"])
-    latest_status["light1"] = data.get("light1", latest_status["light1"])
-    latest_status["light2"] = data.get("light2", latest_status["light2"])
-    latest_status["light3"] = data.get("light3", latest_status["light3"])
-    latest_status["brightness"] = data.get("brightness", latest_status["brightness"])
-    latest_status["fault"] = data.get("fault", latest_status["fault"])
-    latest_status["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Update values
+    latest_status["environment"] = data.get(
+        "environment",
+        latest_status["environment"]
+    )
+
+    latest_status["motion"] = data.get(
+        "motion",
+        latest_status["motion"]
+    )
+
+    latest_status["light1"] = data.get(
+        "light1",
+        latest_status["light1"]
+    )
+
+    latest_status["light2"] = data.get(
+        "light2",
+        latest_status["light2"]
+    )
+
+    latest_status["light3"] = data.get(
+        "light3",
+        latest_status["light3"]
+    )
+
+    latest_status["brightness"] = data.get(
+        "brightness",
+        latest_status["brightness"]
+    )
+
+    latest_status["fault"] = data.get(
+        "fault",
+        latest_status["fault"]
+    )
+
+    # Current time
+    now = time.time()
+
+    latest_status["last_seen"] = now
+
+    latest_status["last_updated"] = datetime.now().strftime(
+        "%H:%M:%S"
+    )
+
     latest_status["esp32_connected"] = True
 
-    print("Received update from ESP32:", latest_status)
+    print(
+        "ESP32 UPDATE:",
+        latest_status["environment"],
+        "| Motion:",
+        latest_status["motion"],
+        "| Brightness:",
+        latest_status["brightness"],
+        "| L1:",
+        latest_status["light1"],
+        "| L2:",
+        latest_status["light2"],
+        "| L3:",
+        latest_status["light3"],
+        "| Fault:",
+        latest_status["fault"]
+    )
 
-    return jsonify({"message": "Status updated successfully"}), 200
+    return jsonify({
+        "status": "success"
+    }), 200
 
 
 @app.route("/api/status", methods=["GET"])
 def get_status():
-    """
-    The dashboard webpage calls this repeatedly (every couple of seconds)
-    to fetch the latest status and update itself, without reloading the page.
-    """
-    return jsonify(latest_status)
+
+    # Check whether ESP32 is still sending data
+    if latest_status["last_seen"] == 0:
+        connected = False
+    else:
+        connected = (
+            time.time() - latest_status["last_seen"]
+            <= ESP32_TIMEOUT
+        )
+
+    response = latest_status.copy()
+
+    response["esp32_connected"] = connected
+
+    return jsonify(response)
 
 
 if __name__ == "__main__":
-    # host="0.0.0.0" makes Flask reachable from other devices on the network
-    # (needed so the ESP32 / Wokwi can reach it, not just your own browser).
-    app.run(host="0.0.0.0", port=5000)
+
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        threaded=True
+    )
