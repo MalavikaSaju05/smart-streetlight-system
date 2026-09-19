@@ -1,222 +1,120 @@
-let lastServerUpdate = null;
+// Smart Street Light dashboard
+// Element IDs used (must exist in index.html):
+//   environment, motion, brightness, fault, last-updated, connection-badge,
+//   light1-status, light1-bulb, light2-status, light2-bulb, light3-status, light3-bulb
 
+const POLL_INTERVAL_MS = 700;   // wait between polls (measured AFTER the previous one finishes)
+const FETCH_TIMEOUT_MS = 4000;  // give up on one request after 4 s
 
-function setBulb(elementId, statusText) {
+let missingIds = new Set();
 
-    const bulb = document.getElementById(elementId);
+// Null-safe element lookup: a missing element is reported once, never throws.
+function el(id) {
+    const node = document.getElementById(id);
+    if (!node && !missingIds.has(id)) {
+        missingIds.add(id);
+        console.warn("Dashboard: element with id '" + id + "' not found in index.html");
+    }
+    return node;
+}
+
+function setText(id, text) {
+    const node = el(id);
+    if (node) node.textContent = text;
+}
+
+function show(value) {
+    if (value === undefined || value === null || value === "unknown") return "--";
+    return String(value).toUpperCase();
+}
+
+function setBulb(id, statusText) {
+    const bulb = el(id);
+    if (!bulb) return;
 
     bulb.className = "light-symbol";
 
     if (statusText === "bright") {
-
         bulb.classList.add("bright");
-
     } else if (statusText === "dim") {
-
         bulb.classList.add("dim");
-
     } else if (statusText === "fault") {
-
         bulb.classList.add("fault");
-
     } else {
-
         bulb.classList.add("off");
     }
 }
 
+function setBadge(text, connected) {
+    const badge = el("connection-badge");
+    if (!badge) return;
+    badge.textContent = text;
+    badge.className = "badge " + (connected ? "connected" : "disconnected");
+}
 
-async function refreshStatus() {
+function render(data) {
+    setText("environment", show(data.environment));
+    setText("motion", show(data.motion));
 
-    try {
+    const brightness = Number(data.brightness) || 0;
+    setText("brightness", Math.round((brightness / 255) * 100) + "%");
 
-        const response = await fetch(
-            "/api/status",
-            {
-                cache: "no-store"
-            }
-        );
+    setText("light1-status", show(data.light1));
+    setText("light2-status", show(data.light2));
+    setText("light3-status", show(data.light3));
 
-        if (!response.ok) {
+    setBulb("light1-bulb", data.light1);
+    setBulb("light2-bulb", data.light2);
+    setBulb("light3-bulb", data.light3);
 
-            throw new Error(
-                "Server returned " + response.status
-            );
-        }
-
-        const data = await response.json();
-
-
-        // =========================
-        // ENVIRONMENT
-        // =========================
-
-        document.getElementById(
-            "environment"
-        ).textContent =
-            String(data.environment).toUpperCase();
-
-
-        // =========================
-        // MOTION
-        // =========================
-
-        document.getElementById(
-            "motion"
-        ).textContent =
-            String(data.motion).toUpperCase();
-
-
-        // =========================
-        // BRIGHTNESS
-        // =========================
-
-        let brightness = Number(data.brightness);
-
-        // Convert PWM 0-255 to percentage
-        let brightnessPercent =
-            Math.round((brightness / 255) * 100);
-
-        document.getElementById(
-            "brightness"
-        ).textContent =
-            brightnessPercent + "%";
-
-
-        // =========================
-        // LIGHT STATUS
-        // =========================
-
-        document.getElementById(
-            "light1-status"
-        ).textContent =
-            String(data.light1).toUpperCase();
-
-        document.getElementById(
-            "light2-status"
-        ).textContent =
-            String(data.light2).toUpperCase();
-
-        document.getElementById(
-            "light3-status"
-        ).textContent =
-            String(data.light3).toUpperCase();
-
-
-        // =========================
-        // BULBS
-        // =========================
-
-        setBulb(
-            "light1-bulb",
-            data.light1
-        );
-
-        setBulb(
-            "light2-bulb",
-            data.light2
-        );
-
-        setBulb(
-            "light3-bulb",
-            data.light3
-        );
-
-
-        // =========================
-        // FAULT
-        // =========================
-
-        const faultEl =
-            document.getElementById("fault");
-
-
-        if (data.fault !== "none") {
-
-            faultEl.textContent =
-                "⚠ " + String(data.fault).toUpperCase();
-
+    const faultEl = el("fault");
+    if (faultEl) {
+        if (data.fault && data.fault !== "none") {
+            faultEl.textContent = "⚠ " + String(data.fault).toUpperCase();
             faultEl.classList.add("alert");
-
         } else {
-
-            faultEl.textContent =
-                "✓ NO FAULT";
-
+            faultEl.textContent = "✓ NO FAULT";
             faultEl.classList.remove("alert");
         }
+    }
 
+    setText("last-updated", data.last_updated || "Never");
 
-        // =========================
-        // LAST UPDATED
-        // =========================
-
-        document.getElementById(
-            "last-updated"
-        ).textContent =
-            data.last_updated || "Never";
-
-
-        // =========================
-        // CONNECTION
-        // =========================
-
-        const badge =
-            document.getElementById(
-                "connection-badge"
-            );
-
-
-        if (data.esp32_connected) {
-
-            badge.textContent =
-                "ESP32: Connected";
-
-            badge.className =
-                "badge connected";
-
-        } else {
-
-            badge.textContent =
-                "ESP32: Not connected";
-
-            badge.className =
-                "badge disconnected";
-        }
-
-
-        lastServerUpdate =
-            Date.now();
-
-
-    } catch (error) {
-
-        console.error(
-            "Dashboard error:",
-            error
-        );
-
-
-        const badge =
-            document.getElementById(
-                "connection-badge"
-            );
-
-        badge.textContent =
-            "Server unreachable";
-
-        badge.className =
-            "badge disconnected";
+    if (data.esp32_connected) {
+        setBadge("ESP32: Connected", true);
+    } else {
+        setBadge("ESP32: Not connected", false);
     }
 }
 
+async function refreshStatus() {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-// First update immediately
+    try {
+        const response = await fetch("/api/status", {
+            cache: "no-store",
+            signal: controller.signal
+        });
+
+        if (!response.ok) {
+            throw new Error("Server returned " + response.status);
+        }
+
+        const data = await response.json();
+        render(data);
+
+    } catch (error) {
+        console.error("Dashboard error:", error);
+        // This only means the BROWSER could not reach the server.
+        setBadge("Server unreachable", false);
+
+    } finally {
+        clearTimeout(timer);
+        // Always schedule the next poll, whatever happened above.
+        // Chaining setTimeout (not setInterval) prevents overlapping requests.
+        setTimeout(refreshStatus, POLL_INTERVAL_MS);
+    }
+}
+
 refreshStatus();
-
-
-// Refresh every 500 ms
-setInterval(
-    refreshStatus,
-    500
-);
