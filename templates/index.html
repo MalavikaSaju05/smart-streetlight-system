@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -10,9 +11,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>
-        Smart Street Light Monitoring
-    </title>
+    <title>Smart Street Light Monitoring</title>
 
 
     <style>
@@ -31,556 +30,319 @@
                 Helvetica,
                 sans-serif;
 
-            background:
-                #f4f6f8;
+            background: #f4f6f8;
 
-            color:
-                #182230;
+            color: #222;
 
-            min-height:
-                100vh;
+            min-height: 100vh;
 
         }
 
 
-        /* ==================================================
+        /* ------------------------------
            HEADER
-        ================================================== */
+        ------------------------------ */
 
         header {
 
-            background:
-                #111827;
+            background: #111827;
 
-            color:
-                white;
+            color: white;
 
-            padding:
-                22px 40px;
+            padding: 22px;
 
-            display:
-                flex;
-
-            justify-content:
-                space-between;
-
-            align-items:
-                center;
-
-            gap:
-                20px;
+            text-align: center;
 
         }
 
 
-        .header-title h1 {
+        header h1 {
 
-            font-size:
-                25px;
+            font-size: 28px;
 
-            margin-bottom:
-                5px;
+            margin-bottom: 8px;
 
         }
 
 
-        .header-title p {
+        header p {
 
-            font-size:
-                14px;
+            color: #cbd5e1;
 
-            color:
-                #cbd5e1;
+            font-size: 14px;
 
         }
 
 
-        .connection {
+        /* ------------------------------
+           CONNECTION
+        ------------------------------ */
 
-            padding:
-                9px 16px;
+        .connection-container {
 
-            border-radius:
-                20px;
+            display: flex;
 
-            font-size:
-                13px;
+            justify-content: center;
 
-            font-weight:
-                bold;
-
-            background:
-                #475569;
-
-            white-space:
-                nowrap;
+            margin-top: 20px;
 
         }
 
 
-        .connection.connected {
+        #connection-badge {
 
-            background:
-                #16a34a;
+            padding: 10px 20px;
 
-        }
+            border-radius: 25px;
 
+            font-weight: bold;
 
-        .connection.disconnected {
-
-            background:
-                #dc2626;
+            font-size: 14px;
 
         }
 
 
-        /* ==================================================
+        .connected {
+
+            background: #dcfce7;
+
+            color: #166534;
+
+        }
+
+
+        .disconnected {
+
+            background: #fee2e2;
+
+            color: #991b1b;
+
+        }
+
+
+        /* ------------------------------
            MAIN
-        ================================================== */
+        ------------------------------ */
 
         main {
 
-            width:
-                min(1200px, 94%);
+            width: 90%;
 
-            margin:
-                35px auto;
+            max-width: 1100px;
+
+            margin: 30px auto;
 
         }
 
 
-        /* ==================================================
-           STATUS CARDS
-        ================================================== */
+        /* ------------------------------
+           SENSOR CARDS
+        ------------------------------ */
 
-        .status-grid {
+        .sensor-grid {
 
-            display:
-                grid;
+            display: grid;
 
             grid-template-columns:
                 repeat(
-                    3,
-                    1fr
+                    auto-fit,
+                    minmax(220px, 1fr)
                 );
 
-            gap:
-                22px;
+            gap: 20px;
 
-            margin-bottom:
-                25px;
+            margin-bottom: 30px;
 
         }
 
 
         .card {
 
-            background:
-                white;
+            background: white;
 
-            border-radius:
-                16px;
+            padding: 24px;
 
-            padding:
-                25px;
+            border-radius: 15px;
 
             box-shadow:
-                0 5px 20px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.08
-                );
+                0 4px 15px
+                rgba(0, 0, 0, 0.08);
+
+            text-align: center;
 
         }
 
 
-        .card-title {
+        .card h3 {
 
-            font-size:
-                14px;
+            color: #6b7280;
 
-            color:
-                #64748b;
+            font-size: 15px;
 
-            margin-bottom:
-                12px;
+            margin-bottom: 12px;
 
         }
 
 
-        .card-value {
+        .value {
 
-            font-size:
-                28px;
+            font-size: 25px;
 
-            font-weight:
-                bold;
+            font-weight: bold;
 
-        }
-
-
-        .environment-card {
-
-            border-top:
-                4px solid
-                #1e293b;
+            text-transform: uppercase;
 
         }
 
 
-        .motion-card {
+        /* ------------------------------
+           LIGHTS
+        ------------------------------ */
 
-            border-top:
-                4px solid
-                #16a34a;
+        .lights-title {
 
-        }
+            text-align: center;
 
+            margin-bottom: 20px;
 
-        .brightness-card {
-
-            border-top:
-                4px solid
-                #f59e0b;
-
-        }
-
-
-        /* ==================================================
-           FAULT CARD
-        ================================================== */
-
-        .fault-card {
-
-            margin-bottom:
-                25px;
-
-            border-top:
-                4px solid
-                #ef4444;
-
-        }
-
-
-        #fault {
-
-            font-size:
-                22px;
-
-            font-weight:
-                bold;
-
-        }
-
-
-        .fault-normal {
-
-            color:
-                #15803d;
-
-        }
-
-
-        .fault-active {
-
-            color:
-                #dc2626;
-
-        }
-
-
-        /* ==================================================
-           LIGHTING NETWORK
-        ================================================== */
-
-        .network-card {
-
-            background:
-                white;
-
-            border-radius:
-                16px;
-
-            padding:
-                28px;
-
-            box-shadow:
-                0 5px 20px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.08
-                );
-
-        }
-
-
-        .network-header {
-
-            display:
-                flex;
-
-            justify-content:
-                space-between;
-
-            align-items:
-                center;
-
-            margin-bottom:
-                25px;
-
-        }
-
-
-        .network-header h2 {
-
-            font-size:
-                22px;
-
-        }
-
-
-        .live-badge {
-
-            padding:
-                7px 13px;
-
-            background:
-                #ecfdf5;
-
-            color:
-                #15803d;
-
-            border-radius:
-                15px;
-
-            font-size:
-                12px;
-
-            font-weight:
-                bold;
+            font-size: 24px;
 
         }
 
 
         .lights-grid {
 
-            display:
-                grid;
+            display: grid;
 
             grid-template-columns:
                 repeat(
-                    3,
-                    1fr
+                    auto-fit,
+                    minmax(220px, 1fr)
                 );
 
-            gap:
-                22px;
+            gap: 20px;
 
         }
 
 
         .light-card {
 
-            background:
-                #f8fafc;
+            background: white;
 
-            border-radius:
-                14px;
+            border-radius: 15px;
 
-            padding:
-                28px 20px;
+            padding: 25px;
 
-            text-align:
-                center;
+            text-align: center;
+
+            box-shadow:
+                0 4px 15px
+                rgba(0, 0, 0, 0.08);
 
         }
 
 
         .bulb {
 
-            width:
-                110px;
+            width: 80px;
 
-            height:
-                110px;
+            height: 80px;
 
-            margin:
-                0 auto 18px;
+            border-radius: 50%;
 
-            border-radius:
-                50%;
+            background: #d1d5db;
 
-            display:
-                flex;
+            margin: 0 auto 20px;
 
-            align-items:
-                center;
+            transition: 0.3s;
 
-            justify-content:
-                center;
-
-            font-size:
-                46px;
-
-            background:
-                #e2e8f0;
-
-            transition:
-                0.3s;
+            border: 5px solid #9ca3af;
 
         }
 
 
-        .light-name {
+        .bulb.on {
 
-            font-size:
-                17px;
+            background: #fff7a8;
 
-            font-weight:
-                bold;
+            border-color: #facc15;
 
-            margin-bottom:
-                8px;
-
-        }
-
-
-        .light-status {
-
-            font-size:
-                14px;
-
-            font-weight:
-                bold;
-
-            color:
-                #64748b;
-
-        }
-
-
-        /* ==================================================
-           LIGHT STATES
-        ================================================== */
-
-        .bulb.off {
-
-            background:
-                #e2e8f0;
-
-            filter:
-                grayscale(1);
-
-            opacity:
-                0.6;
+            box-shadow:
+                0 0 30px
+                rgba(250, 204, 21, 0.7);
 
         }
 
 
         .bulb.dim {
 
-            background:
-                #fef3c7;
+            background: #fde68a;
+
+            border-color: #f59e0b;
+
+            box-shadow:
+                0 0 12px
+                rgba(245, 158, 11, 0.4);
+
+        }
+
+
+        .bulb.fault {
+
+            background: #ef4444;
+
+            border-color: #991b1b;
 
             box-shadow:
                 0 0 20px
-                rgba(
-                    250,
-                    204,
-                    21,
-                    0.3
-                );
+                rgba(239, 68, 68, 0.5);
 
         }
 
 
-        .bulb.bright {
+        .light-status {
 
-            background:
-                #fde68a;
+            font-size: 18px;
 
-            box-shadow:
-                0 0 45px
-                rgba(
-                    250,
-                    204,
-                    21,
-                    0.8
-                );
+            font-weight: bold;
+
+            text-transform: uppercase;
 
         }
 
 
-        /* ==================================================
-           FOOTER INFO
-        ================================================== */
+        /* ------------------------------
+           FOOTER
+        ------------------------------ */
 
-        .footer-info {
+        footer {
 
-            margin-top:
-                25px;
+            text-align: center;
 
-            display:
-                flex;
+            padding: 25px;
 
-            justify-content:
-                space-between;
+            color: #6b7280;
 
-            color:
-                #64748b;
-
-            font-size:
-                13px;
+            font-size: 13px;
 
         }
 
 
-        /* ==================================================
-           RESPONSIVE
-        ================================================== */
+        /* ------------------------------
+           MOBILE
+        ------------------------------ */
 
-        @media (
-            max-width: 800px
-        ) {
+        @media (max-width: 600px) {
 
-            .status-grid {
+            header h1 {
 
-                grid-template-columns:
-                    1fr;
+                font-size: 22px;
 
             }
 
+            main {
 
-            .lights-grid {
-
-                grid-template-columns:
-                    1fr;
-
-            }
-
-
-            header {
-
-                flex-direction:
-                    column;
-
-                align-items:
-                    flex-start;
-
-            }
-
-
-            .footer-info {
-
-                flex-direction:
-                    column;
-
-                gap:
-                    8px;
+                width: 94%;
 
             }
 
@@ -594,150 +356,118 @@
 <body>
 
 
-<!-- ======================================================
-     HEADER
-======================================================= -->
+    <!-- HEADER -->
 
-<header>
-
-    <div class="header-title">
+    <header>
 
         <h1>
-            Smart Street Light Monitoring
+            IoT Smart Street Light Monitoring
         </h1>
 
         <p>
-            IoT-Based Intelligent Lighting System
+            ESP32 Based Smart Lighting System
         </p>
 
-    </div>
-
-
-    <div
-        id="connection-badge"
-        class="connection disconnected"
-    >
-        ESP32 DISCONNECTED
-    </div>
-
-</header>
-
-
-
-<!-- ======================================================
-     MAIN
-======================================================= -->
-
-<main>
-
-
-    <!-- ==================================================
-         MAIN STATUS
-    =================================================== -->
-
-    <section class="status-grid">
-
-
-        <!-- Environment -->
-
-        <div class="card environment-card">
-
-            <div class="card-title">
-                Environment
-            </div>
+        <div class="connection-container">
 
             <div
-                id="environment"
-                class="card-value"
+                id="connection-badge"
+                class="disconnected"
             >
-                WAITING
+                ESP32 DISCONNECTED
+            </div>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- MAIN -->
+
+    <main>
+
+
+        <!-- SENSOR INFORMATION -->
+
+        <div class="sensor-grid">
+
+
+            <div class="card">
+
+                <h3>
+                    Environment
+                </h3>
+
+                <div
+                    id="environment"
+                    class="value"
+                >
+                    WAITING
+                </div>
+
+            </div>
+
+
+
+            <div class="card">
+
+                <h3>
+                    Motion
+                </h3>
+
+                <div
+                    id="motion"
+                    class="value"
+                >
+                    NONE
+                </div>
+
+            </div>
+
+
+
+            <div class="card">
+
+                <h3>
+                    Brightness
+                </h3>
+
+                <div
+                    id="brightness"
+                    class="value"
+                >
+                    0%
+                </div>
+
+            </div>
+
+
+
+            <div class="card">
+
+                <h3>
+                    Fault
+                </h3>
+
+                <div
+                    id="fault"
+                    class="value"
+                >
+                    NONE
+                </div>
+
             </div>
 
         </div>
 
 
 
-        <!-- Motion -->
+        <!-- LIGHTS -->
 
-        <div class="card motion-card">
-
-            <div class="card-title">
-                Motion
-            </div>
-
-            <div
-                id="motion"
-                class="card-value"
-            >
-                NONE
-            </div>
-
-        </div>
-
-
-
-        <!-- Brightness -->
-
-        <div class="card brightness-card">
-
-            <div class="card-title">
-                Brightness
-            </div>
-
-            <div
-                id="brightness"
-                class="card-value"
-            >
-                0%
-            </div>
-
-        </div>
-
-
-    </section>
-
-
-
-    <!-- ==================================================
-         FAULT
-    =================================================== -->
-
-    <section class="card fault-card">
-
-        <div class="card-title">
-            Fault Alert
-        </div>
-
-        <div
-            id="fault"
-            class="fault-normal"
-        >
-            ✓ NO FAULT
-        </div>
-
-    </section>
-
-
-
-    <!-- ==================================================
-         LIGHTING NETWORK
-    =================================================== -->
-
-    <section class="network-card">
-
-
-        <div class="network-header">
-
-            <h2>
-                Lighting Network
-            </h2>
-
-            <div class="live-badge">
-                LIVE STATUS
-            </div>
-
-        </div>
-
+        <h2 class="lights-title">
+            Street Lights
+        </h2>
 
 
         <div class="lights-grid">
@@ -749,21 +479,19 @@
 
                 <div
                     id="light1-bulb"
-                    class="bulb off"
-                >
-                    💡
-                </div>
+                    class="bulb"
+                ></div>
 
-                <div class="light-name">
+                <h3>
                     Light 1
-                </div>
+                </h3>
 
-                <div
+                <p
                     id="light1-status"
                     class="light-status"
                 >
                     OFF
-                </div>
+                </p>
 
             </div>
 
@@ -775,21 +503,19 @@
 
                 <div
                     id="light2-bulb"
-                    class="bulb off"
-                >
-                    💡
-                </div>
+                    class="bulb"
+                ></div>
 
-                <div class="light-name">
+                <h3>
                     Light 2
-                </div>
+                </h3>
 
-                <div
+                <p
                     id="light2-status"
                     class="light-status"
                 >
                     OFF
-                </div>
+                </p>
 
             </div>
 
@@ -801,361 +527,351 @@
 
                 <div
                     id="light3-bulb"
-                    class="bulb off"
-                >
-                    💡
-                </div>
+                    class="bulb"
+                ></div>
 
-                <div class="light-name">
+                <h3>
                     Light 3
-                </div>
+                </h3>
 
-                <div
+                <p
                     id="light3-status"
                     class="light-status"
                 >
                     OFF
-                </div>
+                </p>
 
             </div>
 
-
         </div>
 
-    </section>
+
+    </main>
 
 
 
-    <!-- ==================================================
-         FOOTER
-    =================================================== -->
+    <footer>
 
-    <div class="footer-info">
+        Last Updated:
+        <span id="last-updated">
+            Waiting...
+        </span>
 
-        <div>
-            Last updated:
-            <strong id="last-updated">
-                Waiting...
-            </strong>
-        </div>
-
-        <div>
-            ESP32 + Flask + IoT
-        </div>
-
-    </div>
-
-
-</main>
+    </footer>
 
 
 
-<!-- ======================================================
-     JAVASCRIPT
-======================================================= -->
-
-<script>
+    <script>
 
 
-// ========================================================
-// UPDATE LIGHT
-// ========================================================
-
-function updateLight(
-    bulbId,
-    statusId,
-    state
-)
-{
-
-    const bulb =
-        document.getElementById(
-            bulbId
-        );
-
-    const status =
-        document.getElementById(
-            statusId
-        );
-
-
-    // Remove previous state
-
-    bulb.classList.remove(
-        "off",
-        "dim",
-        "bright"
-    );
-
-
-    // Add current state
-
-    if (
-        state === "bright"
-    )
-    {
-        bulb.classList.add(
-            "bright"
-        );
-    }
-
-    else if (
-        state === "dim"
-    )
-    {
-        bulb.classList.add(
-            "dim"
-        );
-    }
-
-    else
-    {
-        bulb.classList.add(
-            "off"
-        );
-    }
-
-
-    status.textContent =
-        state.toUpperCase();
-
-}
-
-
-
-// ========================================================
-// UPDATE DASHBOARD
-// ========================================================
-
-async function updateDashboard()
-{
-
-    try
-    {
-
-        const response =
-            await fetch(
-                "/api/status",
-                {
-                    cache: "no-store"
-                }
-            );
-
-
-        if (
-            !response.ok
-        )
-        {
-            throw new Error(
-                "Server returned an error"
-            );
-        }
-
-
-        const data =
-            await response.json();
-
-
-        // ==================================================
-        // CONNECTION
-        // ==================================================
+        // -----------------------------------------
+        // GET ELEMENTS
+        // -----------------------------------------
 
         const connectionBadge =
             document.getElementById(
                 "connection-badge"
             );
 
-
-        if (
-            data.esp32_connected
-        )
-        {
-
-            connectionBadge.textContent =
-                "ESP32 CONNECTED";
-
-            connectionBadge.classList.remove(
-                "disconnected"
+        const environment =
+            document.getElementById(
+                "environment"
             );
 
-            connectionBadge.classList.add(
-                "connected"
+        const motion =
+            document.getElementById(
+                "motion"
             );
 
-        }
-
-        else
-        {
-
-            connectionBadge.textContent =
-                "ESP32 DISCONNECTED";
-
-            connectionBadge.classList.remove(
-                "connected"
+        const brightness =
+            document.getElementById(
+                "brightness"
             );
 
-            connectionBadge.classList.add(
-                "disconnected"
-            );
-
-        }
-
-
-
-        // ==================================================
-        // ENVIRONMENT
-        // ==================================================
-
-        document.getElementById(
-            "environment"
-        ).textContent =
-            data.environment.toUpperCase();
-
-
-
-        // ==================================================
-        // MOTION
-        // ==================================================
-
-        document.getElementById(
-            "motion"
-        ).textContent =
-            data.motion.toUpperCase();
-
-
-
-        // ==================================================
-        // BRIGHTNESS
-        // ==================================================
-
-        const brightnessPercent =
-            Math.round(
-                (
-                    data.brightness /
-                    255
-                ) * 100
-            );
-
-
-        document.getElementById(
-            "brightness"
-        ).textContent =
-            brightnessPercent + "%";
-
-
-
-        // ==================================================
-        // FAULT
-        // ==================================================
-
-        const faultElement =
+        const fault =
             document.getElementById(
                 "fault"
             );
 
+        const lastUpdated =
+            document.getElementById(
+                "last-updated"
+            );
 
-        if (
-            data.fault ===
-            "none"
-        )
-        {
 
-            faultElement.textContent =
-                "✓ NO FAULT";
+        // Light elements
 
-            faultElement.className =
-                "fault-normal";
+        const light1Status =
+            document.getElementById(
+                "light1-status"
+            );
+
+        const light2Status =
+            document.getElementById(
+                "light2-status"
+            );
+
+        const light3Status =
+            document.getElementById(
+                "light3-status"
+            );
+
+
+        const light1Bulb =
+            document.getElementById(
+                "light1-bulb"
+            );
+
+        const light2Bulb =
+            document.getElementById(
+                "light2-bulb"
+            );
+
+        const light3Bulb =
+            document.getElementById(
+                "light3-bulb"
+            );
+
+
+
+        // -----------------------------------------
+        // UPDATE BULB
+        // -----------------------------------------
+
+        function updateBulb(
+            bulb,
+            status
+        ) {
+
+            bulb.className = "bulb";
+
+
+            if (status === "bright") {
+
+                bulb.classList.add(
+                    "on"
+                );
+
+            }
+
+            else if (status === "dim") {
+
+                bulb.classList.add(
+                    "dim"
+                );
+
+            }
+
+            else if (
+                status === "fault" ||
+                status === "failed" ||
+                status === "off"
+            ) {
+
+                if (
+                    status === "fault" ||
+                    status === "failed"
+                ) {
+
+                    bulb.classList.add(
+                        "fault"
+                    );
+
+                }
+
+            }
 
         }
 
-        else
-        {
 
-            faultElement.textContent =
-                "⚠ " +
-                data.fault;
 
-            faultElement.className =
-                "fault-active";
+        // -----------------------------------------
+        // UPDATE DASHBOARD
+        // -----------------------------------------
+
+        function updateDashboard(data) {
+
+
+            // Connection
+
+            if (
+                data.esp32_connected === true
+            ) {
+
+                connectionBadge.textContent =
+                    "ESP32 CONNECTED";
+
+                connectionBadge.className =
+                    "connected";
+
+            }
+
+            else {
+
+                connectionBadge.textContent =
+                    "ESP32 DISCONNECTED";
+
+                connectionBadge.className =
+                    "disconnected";
+
+            }
+
+
+
+            // Environment
+
+            environment.textContent =
+                data.environment || "waiting";
+
+
+
+            // Motion
+
+            motion.textContent =
+                data.motion || "none";
+
+
+
+            // Brightness
+
+            let brightnessPercent =
+                Math.round(
+                    (
+                        Number(
+                            data.brightness || 0
+                        ) / 255
+                    ) * 100
+                );
+
+
+            brightness.textContent =
+                brightnessPercent + "%";
+
+
+
+            // Fault
+
+            fault.textContent =
+                data.fault || "none";
+
+
+
+            // Lights
+
+            light1Status.textContent =
+                data.light1 || "off";
+
+            light2Status.textContent =
+                data.light2 || "off";
+
+            light3Status.textContent =
+                data.light3 || "off";
+
+
+            // Bulbs
+
+            updateBulb(
+                light1Bulb,
+                data.light1 || "off"
+            );
+
+            updateBulb(
+                light2Bulb,
+                data.light2 || "off"
+            );
+
+            updateBulb(
+                light3Bulb,
+                data.light3 || "off"
+            );
+
+
+            // Last updated
+
+            lastUpdated.textContent =
+                data.last_updated ||
+                "Waiting...";
 
         }
 
 
 
-        // ==================================================
-        // LIGHTS
-        // ==================================================
+        // -----------------------------------------
+        // GET STATUS
+        // -----------------------------------------
 
-        updateLight(
-            "light1-bulb",
-            "light1-status",
-            data.light1
+        async function getStatus() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/status",
+                        {
+                            cache: "no-store"
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Server error"
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "[DASHBOARD]",
+                    data
+                );
+
+
+                updateDashboard(data);
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "[DASHBOARD ERROR]",
+                    error
+                );
+
+
+                connectionBadge.textContent =
+                    "SERVER ERROR";
+
+                connectionBadge.className =
+                    "disconnected";
+
+            }
+
+        }
+
+
+
+        // -----------------------------------------
+        // START
+        // -----------------------------------------
+
+        getStatus();
+
+
+        // Update every 2 seconds
+
+        setInterval(
+            getStatus,
+            2000
         );
 
 
-        updateLight(
-            "light2-bulb",
-            "light2-status",
-            data.light2
-        );
-
-
-        updateLight(
-            "light3-bulb",
-            "light3-status",
-            data.light3
-        );
-
-
-
-        // ==================================================
-        // LAST UPDATED
-        // ==================================================
-
-        document.getElementById(
-            "last-updated"
-        ).textContent =
-            data.last_updated;
-
-
-    }
-
-    catch(error)
-    {
-
-        console.error(
-            "Dashboard update failed:",
-            error
-        );
-
-    }
-
-}
-
-
-
-// ========================================================
-// FIRST UPDATE
-// ========================================================
-
-updateDashboard();
-
-
-
-// ========================================================
-// CONTINUOUS UPDATE
-// ========================================================
-
-// Ask Flask for latest ESP32 state
-// every 1 second.
-
-setInterval(
-    updateDashboard,
-    1000
-);
-
-
-</script>
+    </script>
 
 
 </body>
