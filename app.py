@@ -1,31 +1,17 @@
-"""
-SMART STREET LIGHT DASHBOARD — MQTT VERSION (FIXED)
-
-Fix applied: on_disconnect() now accepts the "disconnect_flags" argument
-that paho-mqtt's CallbackAPIVersion.VERSION2 passes to it. The missing
-parameter was causing a TypeError every time the connection dropped,
-which crashed the entire background MQTT thread and silently killed
-the dashboard's live updates until Render restarted the service.
-"""
-
 from flask import Flask, render_template, jsonify
 from datetime import datetime
 import json
 import threading
+import time
 import paho.mqtt.client as mqtt
 
 app = Flask(__name__)
 
-# ============================================================
-# MQTT SETTINGS — must match the ESP32 sketch exactly
-# ============================================================
-MQTT_BROKER = "test.mosquitto.org"
+# MQTT Settings — synchronized with Wokwi sketch
+MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
-MQTT_TOPIC = "malavika_streetlight_demo/status"  # <-- must match the ESP32 code exactly
+MQTT_TOPIC = "malavika_streetlight_demo/status"
 
-# ============================================================
-# SHARED STATE
-# ============================================================
 latest_status = {
     "environment": "unknown",
     "motion": "none",
@@ -38,104 +24,63 @@ latest_status = {
     "esp32_connected": False
 }
 
-status_lock = threading.Lock()  # protects latest_status from being read/written at the same time
+status_lock = threading.Lock()
 
-
-# ============================================================
-# MQTT CALLBACKS
-# ============================================================
 def on_connect(client, userdata, flags, reason_code, properties=None):
-    print(f"[MQTT] Connected to broker (reason code: {reason_code})")
+    print(f"[MQTT] Connected to broker (code: {reason_code})")
     client.subscribe(MQTT_TOPIC)
-    print(f"[MQTT] Subscribed to topic: {MQTT_TOPIC}")
-
 
 def on_message(client, userdata, msg):
-    """
-    Called automatically whenever a new message arrives on our topic.
-    This is the MQTT equivalent of the old POST /api/status route.
-    """
     try:
         payload = json.loads(msg.payload.decode())
-        print(f"[MQTT] Received: {payload}")
-
         with status_lock:
-            latest_status["environment"] = payload.get("environment", latest_status["environment"])
-            latest_status["motion"] = payload.get("motion", latest_status["motion"])
-            latest_status["light1"] = payload.get("light1", latest_status["light1"])
-            latest_status["light2"] = payload.get("light2", latest_status["light2"])
-            latest_status["light3"] = payload.get("light3", latest_status["light3"])
-            latest_status["brightness"] = payload.get("brightness", latest_status["brightness"])
-            latest_status["fault"] = payload.get("fault", latest_status["fault"])
-            latest_status["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            latest_status["esp32_connected"] = True
-
-    except (json.JSONDecodeError, UnicodeDecodeError) as e:
-        print(f"[MQTT] Failed to parse message: {e}")
-
+            latest_status.update({
+                "environment": payload.get("environment", latest_status["environment"]),
+                "motion": payload.get("motion", latest_status["motion"]),
+                "light1": payload.get("light1", latest_status["light1"]),
+                "light2": payload.get("light2", latest_status["light2"]),
+                "light3": payload.get("light3", latest_status["light3"]),
+                "brightness": payload.get("brightness", latest_status["brightness"]),
+                "fault": payload.get("fault", latest_status["fault"]),
+                "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "esp32_connected": True
+            })
+    except Exception as e:
+        print(f"[MQTT] Payload error: {e}")
 
 def on_disconnect(client, userdata, disconnect_flags, reason_code, properties=None):
-    """
-    FIXED: added the 'disconnect_flags' parameter required by
-    CallbackAPIVersion.VERSION2. Without it, paho-mqtt's internal call
-    to this function raised a TypeError and crashed the whole MQTT thread.
-    """
-    print(f"[MQTT] Disconnected (reason code: {reason_code})")
+    with status_lock:
+        latest_status["esp32_connected"] = False
 
-
-# ============================================================
-# START MQTT CLIENT IN A BACKGROUND THREAD
-# ============================================================
-def start_mqtt_client():
+def start_mqtt():
     while True:
         try:
             client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
             client.on_connect = on_connect
             client.on_message = on_message
             client.on_disconnect = on_disconnect
-
             client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
-
-            # loop_forever() blocks and will keep trying to reconnect
-            # automatically on most transient errors. If it does fully
-            # exit (e.g. an unhandled exception), the outer while-loop
-            # below catches it and restarts the client instead of
-            # silently killing the thread forever.
             client.loop_forever()
-
         except Exception as e:
-            print(f"[MQTT] Client crashed, restarting in 5s: {e}")
-            import time
+            print(f"[MQTT] Thread reconnecting in 5s: {e}")
             time.sleep(5)
 
-
-# Start the MQTT listener thread once, when the app starts.
-# daemon=True means this thread shuts down automatically when Flask stops.
-mqtt_thread = threading.Thread(target=start_mqtt_client, daemon=True)
+# Start background MQTT listener thread
+mqtt_thread = threading.Thread(target=start_mqtt, daemon=True)
 mqtt_thread.start()
 
-
-# ============================================================
-# WEB ROUTES (unchanged behavior from the HTTP version)
-# ============================================================
 @app.route("/")
 def index():
-    """Serves the dashboard web page."""
     return render_template("index.html")
-
 
 @app.route("/api/status", methods=["GET"])
 def get_status():
-    """
-    The dashboard webpage still calls this every 2 seconds, exactly as before.
-    It has no idea the data arrived via MQTT instead of a direct POST.
-    """
     with status_lock:
         return jsonify(latest_status)
 
+@app.route("/ping", methods=["GET"])
+def ping():
+    return jsonify({"status": "alive"}), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
-    # use_reloader=False is important here: Flask's debug auto-reloader
-    # starts your script twice, which would start two MQTT subscriber
-    # threads and cause duplicate/confusing messages.
+    app.run(host="0.0.0.0", port=5000, debug=False)
