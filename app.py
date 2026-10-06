@@ -21,7 +21,7 @@ app = Flask(__name__)
 # ============================================================
 # MQTT SETTINGS — must match the ESP32 sketch exactly
 # ============================================================
-MQTT_BROKER = "broker.hivemq.com"
+MQTT_BROKER = "test.mosquitto.org"
 MQTT_PORT = 1883
 MQTT_TOPIC = "malavika_streetlight_demo/status"  # <-- must match the ESP32 code exactly
 
