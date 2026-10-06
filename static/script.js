@@ -13,12 +13,13 @@ let consecutiveFailures = 0;
 // ============================================================
 
 function el(id) {
+
     return document.getElementById(id);
 }
 
 
 // ============================================================
-// DISPLAY
+// DISPLAY VALUE
 // ============================================================
 
 function displayValue(value) {
@@ -28,6 +29,7 @@ function displayValue(value) {
         value === null ||
         value === "unknown"
     ) {
+
         return "--";
     }
 
@@ -36,7 +38,7 @@ function displayValue(value) {
 
 
 // ============================================================
-// TEXT
+// SET TEXT
 // ============================================================
 
 function setText(id, value) {
@@ -52,7 +54,7 @@ function setText(id, value) {
 
 
 // ============================================================
-// BULB
+// SET LIGHT BULB
 // ============================================================
 
 function setBulb(id, status) {
@@ -63,21 +65,29 @@ function setBulb(id, status) {
         return;
     }
 
+    // Remove old classes
     bulb.className = "light-symbol";
+
 
     if (status === "bright") {
 
         bulb.classList.add("bright");
 
-    } else if (status === "dim") {
+    }
+
+    else if (status === "dim") {
 
         bulb.classList.add("dim");
 
-    } else if (status === "fault") {
+    }
+
+    else if (status === "fault") {
 
         bulb.classList.add("fault");
 
-    } else {
+    }
+
+    else {
 
         bulb.classList.add("off");
     }
@@ -88,62 +98,97 @@ function setBulb(id, status) {
 // CONNECTION BADGE
 // ============================================================
 
-function updateConnectionBadge(connected) {
+function updateConnectionBadge(
+    connected
+) {
 
-    const badge = el("connection-badge");
+    const badge =
+        el("connection-badge");
 
     if (!badge) {
         return;
     }
 
+
     if (connected) {
 
-        badge.textContent = "ESP32: Connected";
-        badge.className = "badge connected";
+        badge.textContent =
+            "ESP32: Connected";
 
-    } else {
+        badge.className =
+            "badge connected";
 
-        badge.textContent = "ESP32: Not connected";
-        badge.className = "badge disconnected";
+    }
+
+    else {
+
+        badge.textContent =
+            "ESP32: Not connected";
+
+        badge.className =
+            "badge disconnected";
     }
 }
 
 
 // ============================================================
-// RENDER DATA
+// RENDER SERVER DATA
 // ============================================================
 
 function render(data) {
 
-    // Environment
+    // --------------------------------------------------------
+    // ENVIRONMENT
+    // --------------------------------------------------------
+
     setText(
         "environment",
-        displayValue(data.environment)
+        displayValue(
+            data.environment
+        )
     );
 
 
-    // Motion
+    // --------------------------------------------------------
+    // MOTION
+    // --------------------------------------------------------
+
     setText(
         "motion",
-        displayValue(data.motion)
+        displayValue(
+            data.motion
+        )
     );
 
 
-    // Brightness
-    let brightness = Number(data.brightness);
+    // --------------------------------------------------------
+    // BRIGHTNESS
+    // --------------------------------------------------------
+
+    let brightness =
+        Number(data.brightness);
+
 
     if (Number.isNaN(brightness)) {
+
         brightness = 0;
     }
 
+
     brightness = Math.max(
         0,
-        Math.min(255, brightness)
+        Math.min(
+            255,
+            brightness
+        )
     );
 
-    const percentage = Math.round(
-        (brightness / 255) * 100
-    );
+
+    const percentage =
+        Math.round(
+            (brightness / 255) * 100
+        );
+
 
     setText(
         "brightness",
@@ -151,11 +196,17 @@ function render(data) {
     );
 
 
-    // Light 1
+    // --------------------------------------------------------
+    // LIGHT 1
+    // --------------------------------------------------------
+
     setText(
         "light1-status",
-        displayValue(data.light1)
+        displayValue(
+            data.light1
+        )
     );
+
 
     setBulb(
         "light1-bulb",
@@ -163,11 +214,17 @@ function render(data) {
     );
 
 
-    // Light 2
+    // --------------------------------------------------------
+    // LIGHT 2
+    // --------------------------------------------------------
+
     setText(
         "light2-status",
-        displayValue(data.light2)
+        displayValue(
+            data.light2
+        )
     );
+
 
     setBulb(
         "light2-bulb",
@@ -175,11 +232,17 @@ function render(data) {
     );
 
 
-    // Light 3
+    // --------------------------------------------------------
+    // LIGHT 3
+    // --------------------------------------------------------
+
     setText(
         "light3-status",
-        displayValue(data.light3)
+        displayValue(
+            data.light3
+        )
     );
+
 
     setBulb(
         "light3-bulb",
@@ -187,8 +250,13 @@ function render(data) {
     );
 
 
-    // Fault
-    const faultElement = el("fault");
+    // --------------------------------------------------------
+    // FAULT
+    // --------------------------------------------------------
+
+    const faultElement =
+        el("fault");
+
 
     if (faultElement) {
 
@@ -199,36 +267,55 @@ function render(data) {
 
             faultElement.textContent =
                 "⚠ " +
-                String(data.fault).toUpperCase();
+                String(
+                    data.fault
+                ).toUpperCase();
 
-            faultElement.classList.add("alert");
 
-        } else {
+            faultElement.classList.add(
+                "alert"
+            );
+
+        }
+
+        else {
 
             faultElement.textContent =
                 "✓ NO FAULT";
 
-            faultElement.classList.remove("alert");
+
+            faultElement.classList.remove(
+                "alert"
+            );
         }
     }
 
 
-    // Last updated
+    // --------------------------------------------------------
+    // LAST UPDATED
+    // --------------------------------------------------------
+
     setText(
         "last-updated",
-        data.last_updated || "Never"
+        data.last_updated ||
+        "Never"
     );
 
 
-    // ESP32 connection
+    // --------------------------------------------------------
+    // ESP32 CONNECTION
+    // --------------------------------------------------------
+
     updateConnectionBadge(
-        Boolean(data.esp32_connected)
+        Boolean(
+            data.esp32_connected
+        )
     );
 }
 
 
 // ============================================================
-// GET STATUS
+// FETCH STATUS
 // ============================================================
 
 async function refreshStatus() {
@@ -236,68 +323,101 @@ async function refreshStatus() {
     const controller =
         new AbortController();
 
+
     const timeout =
         setTimeout(
             () => controller.abort(),
             FETCH_TIMEOUT_MS
         );
 
+
     try {
 
-        const response = await fetch(
-            "/api/status?t=" + Date.now(),
-            {
-                method: "GET",
-                cache: "no-store",
-                signal: controller.signal
-            }
-        );
+        const response =
+            await fetch(
+                "/api/status?t=" +
+                Date.now(),
+                {
+                    method: "GET",
+
+                    cache: "no-store",
+
+                    signal:
+                        controller.signal,
+
+                    headers: {
+                        "Cache-Control":
+                            "no-cache"
+                    }
+                }
+            );
+
 
         if (!response.ok) {
 
             throw new Error(
-                "HTTP " + response.status
+                "HTTP " +
+                response.status
             );
         }
+
 
         const data =
             await response.json();
 
+
+        // Request succeeded
         consecutiveFailures = 0;
 
+
+        // Update dashboard
         render(data);
 
     }
+
+
     catch (error) {
 
         consecutiveFailures++;
+
 
         console.error(
             "Dashboard error:",
             error
         );
 
+
         const badge =
-            el("connection-badge");
+            el(
+                "connection-badge"
+            );
+
 
         if (badge) {
 
-            if (consecutiveFailures <= 2) {
+            if (
+                consecutiveFailures <= 2
+            ) {
 
                 badge.textContent =
                     "Connecting...";
 
-            } else {
+            }
+
+            else {
 
                 badge.textContent =
                     "Server unreachable";
             }
+
 
             badge.className =
                 "badge disconnected";
         }
 
     }
+
+
     finally {
 
         clearTimeout(timeout);
@@ -306,12 +426,13 @@ async function refreshStatus() {
 
 
 // ============================================================
-// START POLLING
+// START DASHBOARD
 // ============================================================
 
 setInterval(
     refreshStatus,
     POLL_INTERVAL_MS
 );
+
 
 refreshStatus();
