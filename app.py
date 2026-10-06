@@ -1,10 +1,8 @@
 from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
 from datetime import datetime
 import time
 
 app = Flask(__name__)
-CORS(app)  # Enables Cross-Origin Resource Sharing for browser dashboard access
 
 # ============================================================
 # IN-MEMORY STATE STORE
