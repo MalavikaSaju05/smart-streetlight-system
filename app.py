@@ -3,10 +3,6 @@ from datetime import datetime
 import time
 
 
-# ============================================================
-# FLASK APPLICATION
-# ============================================================
-
 app = Flask(__name__)
 
 
@@ -18,23 +14,32 @@ ESP32_TIMEOUT_SECONDS = 10
 
 
 # ============================================================
-# DEFAULT STATE
+# CURRENT SYSTEM STATE
 # ============================================================
 
 latest_state = {
+
     "environment": "waiting",
+
     "motion": "none",
+
     "light1": "off",
+
     "light2": "off",
+
     "light3": "off",
+
     "brightness": 0,
+
     "fault": "none",
+
     "esp32_connected": False,
+
     "last_updated": "Waiting for ESP32..."
+
 }
 
 
-# Last time ESP32 sent data
 last_seen_timestamp = 0
 
 
@@ -47,14 +52,9 @@ def is_esp32_connected():
     if last_seen_timestamp == 0:
         return False
 
-    elapsed_time = (
-        time.time() -
-        last_seen_timestamp
-    )
-
     return (
-        elapsed_time <=
-        ESP32_TIMEOUT_SECONDS
+        time.time() - last_seen_timestamp
+        <= ESP32_TIMEOUT_SECONDS
     )
 
 
@@ -71,99 +71,55 @@ def dashboard():
 
 
 # ============================================================
-# ESP32 API
+# ESP32 UPDATE ENDPOINT
+#
+# ESP32 sends data using GET parameters.
+#
+# Example:
+#
+# /api/update?environment=night&motion=none&
+# light1=dim&light2=dim&light3=dim&
+# brightness=40&fault=none
 # ============================================================
 
-@app.route(
-    "/api/status",
-    methods=["POST"]
-)
-def receive_status():
+@app.route("/api/update", methods=["GET"])
+def update_from_esp32():
 
-    global latest_state
     global last_seen_timestamp
 
 
     # --------------------------------------------------------
-    # Read JSON
+    # Get data from ESP32
     # --------------------------------------------------------
 
-    data = request.get_json(
-        silent=True
+    environment = request.args.get(
+        "environment",
+        "unknown"
     )
 
-
-    # --------------------------------------------------------
-    # Validate JSON
-    # --------------------------------------------------------
-
-    if not isinstance(
-        data,
-        dict
-    ):
-        return jsonify({
-            "status": "error",
-            "message": "Invalid JSON"
-        }), 400
-
-
-    # --------------------------------------------------------
-    # Environment
-    # --------------------------------------------------------
-
-    latest_state["environment"] = str(
-        data.get(
-            "environment",
-            "unknown"
-        )
+    motion = request.args.get(
+        "motion",
+        "none"
     )
 
-
-    # --------------------------------------------------------
-    # Motion
-    # --------------------------------------------------------
-
-    latest_state["motion"] = str(
-        data.get(
-            "motion",
-            "none"
-        )
+    light1 = request.args.get(
+        "light1",
+        "off"
     )
 
-
-    # --------------------------------------------------------
-    # Light 1
-    # --------------------------------------------------------
-
-    latest_state["light1"] = str(
-        data.get(
-            "light1",
-            "off"
-        )
+    light2 = request.args.get(
+        "light2",
+        "off"
     )
 
-
-    # --------------------------------------------------------
-    # Light 2
-    # --------------------------------------------------------
-
-    latest_state["light2"] = str(
-        data.get(
-            "light2",
-            "off"
-        )
+    light3 = request.args.get(
+        "light3",
+        "off"
     )
 
-
-    # --------------------------------------------------------
-    # Light 3
-    # --------------------------------------------------------
-
-    latest_state["light3"] = str(
-        data.get(
-            "light3",
-            "off"
-        )
+    fault = request.args.get(
+        "fault",
+        "none"
     )
 
 
@@ -174,7 +130,7 @@ def receive_status():
     try:
 
         brightness = int(
-            data.get(
+            request.args.get(
                 "brightness",
                 0
             )
@@ -188,65 +144,55 @@ def receive_status():
             )
         )
 
-        latest_state["brightness"] = (
-            brightness
-        )
-
     except (
         ValueError,
         TypeError
     ):
 
-        latest_state["brightness"] = 0
+        brightness = 0
 
 
     # --------------------------------------------------------
-    # Fault
+    # Update state
     # --------------------------------------------------------
 
-    latest_state["fault"] = str(
-        data.get(
-            "fault",
-            "none"
-        )
-    )
+    latest_state["environment"] = environment
 
+    latest_state["motion"] = motion
 
-    # --------------------------------------------------------
-    # ESP32 connection
-    # --------------------------------------------------------
+    latest_state["light1"] = light1
 
-    latest_state[
-        "esp32_connected"
-    ] = True
+    latest_state["light2"] = light2
+
+    latest_state["light3"] = light3
+
+    latest_state["brightness"] = brightness
+
+    latest_state["fault"] = fault
+
+    latest_state["esp32_connected"] = True
 
 
     # --------------------------------------------------------
     # Timestamp
     # --------------------------------------------------------
 
-    latest_state[
-        "last_updated"
-    ] = datetime.now().strftime(
-        "%Y-%m-%d %H:%M:%S"
+    latest_state["last_updated"] = (
+        datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
     )
 
 
-    # --------------------------------------------------------
-    # Update last seen
-    # --------------------------------------------------------
-
-    last_seen_timestamp = (
-        time.time()
-    )
+    last_seen_timestamp = time.time()
 
 
     # --------------------------------------------------------
-    # Server console
+    # Render log
     # --------------------------------------------------------
 
     print(
-        "[ESP32 DATA]",
+        "[ESP32 UPDATE]",
         latest_state
     )
 
@@ -256,13 +202,18 @@ def receive_status():
     # --------------------------------------------------------
 
     return jsonify({
+
         "status": "success",
-        "message": "State updated"
+
+        "message": "ESP32 data updated",
+
+        "state": latest_state
+
     }), 200
 
 
 # ============================================================
-# DASHBOARD API
+# DASHBOARD STATUS
 # ============================================================
 
 @app.route(
@@ -279,7 +230,8 @@ def get_status():
     # --------------------------------------------------------
     # ESP32 disconnected
     #
-    # Do NOT show old sensor values.
+    # IMPORTANT:
+    # Do not show old values.
     # --------------------------------------------------------
 
     if not connected:
@@ -318,9 +270,10 @@ def get_status():
         "esp32_connected"
     ] = True
 
+
     return jsonify(
         latest_state
-    )
+    ), 200
 
 
 # ============================================================
@@ -331,15 +284,20 @@ def get_status():
 def health():
 
     return jsonify({
+
         "status": "ok",
-        "service": "smart-streetlight",
+
+        "service":
+            "smart-streetlight",
+
         "esp32_connected":
             is_esp32_connected()
-    })
+
+    }), 200
 
 
 # ============================================================
-# LOCAL DEVELOPMENT
+# RUN LOCALLY
 # ============================================================
 
 if __name__ == "__main__":
