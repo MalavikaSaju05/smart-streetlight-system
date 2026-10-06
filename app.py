@@ -1,13 +1,11 @@
 """
-SMART STREET LIGHT DASHBOARD — MQTT VERSION
+SMART STREET LIGHT DASHBOARD — MQTT VERSION (FIXED)
 
-Change from the HTTP version:
-- REMOVED: the POST /api/status route (ESP32 no longer calls Flask directly)
-- ADDED: a background MQTT subscriber thread that listens to the same topic
-  the ESP32 publishes to, and updates the same latest_status dictionary.
-- UNCHANGED: GET /api/status, the dashboard route "/", and all of
-  templates/index.html, static/style.css, static/script.js.
-  The browser-facing side doesn't know or care that MQTT is involved.
+Fix applied: on_disconnect() now accepts the "disconnect_flags" argument
+that paho-mqtt's CallbackAPIVersion.VERSION2 passes to it. The missing
+parameter was causing a TypeError every time the connection dropped,
+which crashed the entire background MQTT thread and silently killed
+the dashboard's live updates until Render restarted the service.
 """
 
 from flask import Flask, render_template, jsonify
@@ -76,7 +74,12 @@ def on_message(client, userdata, msg):
         print(f"[MQTT] Failed to parse message: {e}")
 
 
-def on_disconnect(client, userdata, reason_code, properties=None):
+def on_disconnect(client, userdata, disconnect_flags, reason_code, properties=None):
+    """
+    FIXED: added the 'disconnect_flags' parameter required by
+    CallbackAPIVersion.VERSION2. Without it, paho-mqtt's internal call
+    to this function raised a TypeError and crashed the whole MQTT thread.
+    """
     print(f"[MQTT] Disconnected (reason code: {reason_code})")
 
 
@@ -84,16 +87,26 @@ def on_disconnect(client, userdata, reason_code, properties=None):
 # START MQTT CLIENT IN A BACKGROUND THREAD
 # ============================================================
 def start_mqtt_client():
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.on_disconnect = on_disconnect
+    while True:
+        try:
+            client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+            client.on_connect = on_connect
+            client.on_message = on_message
+            client.on_disconnect = on_disconnect
 
-    client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+            client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
 
-    # loop_forever() blocks, so it must run in its own thread,
-    # otherwise Flask would never get to serve web pages.
-    client.loop_forever()
+            # loop_forever() blocks and will keep trying to reconnect
+            # automatically on most transient errors. If it does fully
+            # exit (e.g. an unhandled exception), the outer while-loop
+            # below catches it and restarts the client instead of
+            # silently killing the thread forever.
+            client.loop_forever()
+
+        except Exception as e:
+            print(f"[MQTT] Client crashed, restarting in 5s: {e}")
+            import time
+            time.sleep(5)
 
 
 # Start the MQTT listener thread once, when the app starts.
